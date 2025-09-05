@@ -3,7 +3,7 @@
 export DEBIAN_FRONTEND=noninteractive
 sudo apt update
 
-packages=('docker' 'docker-compose' 'python3' 'django')
+packages=('docker' 'docker-compose' 'python3')
 
 for package in "${packages[@]}"
 do
@@ -15,6 +15,14 @@ do
         sudo apt install -y $package
     fi
 done
+
+if python3 -m django --version &> /dev/null
+then
+    echo "Django already exists!"
+else
+    echo "Installing Django"
+    sudo pip3 install django
+fi
 
 python3 --version
 docker --version
