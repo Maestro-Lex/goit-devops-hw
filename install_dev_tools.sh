@@ -1,0 +1,17 @@
+#!/bin/bash
+
+export DEBIAN_FRONTEND=noninteractive
+sudo apt update
+
+packages=('docker' 'docker-compose' 'python' 'django')
+
+for package in "${packages[@]}"
+do
+    if sudo apt list | grep $package > /dev/null 2>&1
+    then
+        echo "$package already exists!"
+    else
+        echo "Installing $package!"
+        sudo apt install -y $package
+    fi
+done
