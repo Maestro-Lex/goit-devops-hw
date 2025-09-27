@@ -9,6 +9,7 @@
     ├── jenkins.tf
     ├── outputs.tf               # Загальне виведення ресурсів
     ├── variables.tf
+    ├── django.yaml
     │
     ├── modules/                 # Каталог з усіма модулями
     │   │
@@ -63,6 +64,18 @@
     │       │   └── hpa.yaml
     │       ├── Chart.yaml
     │       └── values.yaml
+    │
+    ├── Django/
+    │   └── goit/
+    │       ├── templates/
+    │       │   ├── __init__.py
+    │       │   ├── asgi.py
+    │       │   ├── settings.py
+    │       │   ├── urls.py
+    │       │   └── wsgi.py
+    │       ├── Dockerfile
+    │       ├── manage.py
+    │       └── requirements.txt
     │
     └── README.md                # Документація проєкту
 
