@@ -2,7 +2,7 @@
 
 ## Структура проєкту
 
-    lesson-5/
+    final project/
     │
     ├── main.tf                  # Головний файл для підключення модулів
     ├── backend.tf               # Налаштування бекенду для стейтів (S3 + DynamoDB)
@@ -35,6 +35,12 @@
     │   │   ├── variables.tf     # Змінні для EKS
     │   │   └── outputs.tf       # Виведення інформації про кластер
     │   │
+    │   ├── monitoring/          # Модуль для моніторингу
+    │   │   ├── prometheus.tf
+    │   │   ├── variables.tf
+    │   │   ├── values.yaml
+    │   │   └── outputs.tf
+    │   │
     │   ├── rds/                 # Модуль для RDS
     │   │   ├── rds.tf           # Створення RDS бази даних
     │   │   ├── aurora.tf        # Створення aurora кластера бази даних
@@ -49,7 +55,7 @@
     │   │   ├── values.yaml      # Конфігурація jenkins
     │   │   └── outputs.tf       # Виводи (URL, пароль адміністратора)
     │   │
-    │   └── argo_cd/             # ✅ Новий модуль для Helm-установки Argo CD
+    │   └── argo_cd/             # Модуль для Helm-установки Argo CD
     │       ├── jenkins.tf       # Helm release для Jenkins
     │       ├── variables.tf     # Змінні (версія чарта, namespace, repo URL тощо)
     │       ├── providers.tf     # Kubernetes+Helm.  переносимо з модуля jenkins
@@ -86,6 +92,17 @@
     │
     └── README.md                # Документація проєкту
 
+## Опис проєкту
+
+Інфраструктура DevOps на AWS з використанням Terraform, що включає наступні компоненти:
+
+- Розгортання Kubernetes кластера (EKS) з підтримкою CI/CD
+- Інтеграція Jenkins для автоматизації збірки та деплою
+- Інсталяція Argo CD для управління застосунками
+- Налаштування бази даних (RDS або Aurora)
+- Організація контейнерного реєстру (ECR)
+- Моніторинг з Prometheus та Grafana
+
 1. Модуль s3-backend керує налаштуваннями для зберігання та блокування terraform states. Він створює S3-bucket для зберігання Terraform state та DynamoDB table для блокування стейтів.
 
 2. Модуль vpc/ використовується для налаштування віртуального мережевого простору. Створює Virtual Private Cloud (VPC) з трьома публічними підмережами для доступу в Інтернет через шлюз та трьома приватними підмережами з доступом до Інтернету через NAT Gateway. Керує маршрутизацією за відповідними таблицями.
@@ -116,122 +133,35 @@
 
 > <span><span style="color: red"><b>Увага!</b></span> Ресурс <b><i>s3-bucket</i></b> буде видалено лише якщо сховище порожнє.</span>
 
-## Переносимо образ, створений в lesson-4, на ECR репозиторій
+<p>Для розгортання кластеру оновлюємо <b><i>kubeconfig</i></b>. Стан кластера:</p>
 
 ```bash
-docker tag lesson-4-django:latest <ecr_repo>
-docker push <ecr_repo>
+aws eks update-kubeconfig --region <your-region> --name <your-cluster-name>
+kubectl get nodes
 ```
 
-## Встановлюємо Django app за допомогою Helm Chart
+<p>Перевіряємо <b><i>Jenkins</i></b></p>
 
 ```bash
-cd charts/django-app
-helm upgrade --install django-app . --namespace django --create-namespace
+kubectl get all -n jenkins
+kubectl port-forward svc/jenkins 8080:8080 -n jenkins
 ```
 
-## Перенапоравляємо порт
+<p>Перевіряємо <b><i>Argo CD:</i></b></p>
 
 ```bash
-kubectl port-forward svc/django-app 8000:8000 -n django
+kubectl get all -n argocd
+kubectl port-forward svc/argocd-server 8081:443 -n argocd
 ```
-
-## Виконання Jenkins
-
-```bash
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-```
-
-## Модуль RDS
-
-```bash
-module "rds" {
-  source = "./modules/rds"
-
-  name                = "my-db"
-  db_name             = "appdb"
-  username            = "admin"
-  password            = "supersecret"
-  vpc_id              = "vpc-123456"
-  vpc_cidr_block      = "10.0.0.0/16"
-  subnet_private_ids  = ["subnet-aaa", "subnet-bbb"]
-  subnet_public_ids   = ["subnet-ccc", "subnet-ddd"]
-  publicly_accessible = false
-  multi_az            = false
-  use_aurora          = true       # true -> Aurora Cluster, false -> Standard RDS
-  aurora_replica_count = 1         # Кількість reader реплік для Aurora
-  instance_class      = "db.t3.medium"
-  allocated_storage   = 20         # Для стандартного RDS
-  engine_version      = "14.7"     # Для RDS
-  engine_version_cluster = "15.3"  # Для Aurora
-  parameters          = {
-    max_connections = "100"
-    log_statement  = "none"
-    work_mem       = "4MB"
-  }
-  tags = {
-    Project = "Demo"
-    Env     = "Dev"
-  }
-}
-```
-
-## Опис змінних
-
-| Змінна                          | Тип          | Опис                                                      | Default             |
-| ------------------------------- | ------------ | --------------------------------------------------------- | ------------------- |
-| `name`                          | string       | Назва інстансу або кластера                               | –                   |
-| `use_aurora`                    | bool         | Використовувати Aurora (true) чи стандартний RDS (false)  | false               |
-| `db_name`                       | string       | Назва бази даних                                          | –                   |
-| `username`                      | string       | Користувач бази даних                                     | –                   |
-| `password`                      | string       | Пароль користувача (sensitive)                            | –                   |
-| `engine`                        | string       | Двигун для стандартного RDS                               | postgres            |
-| `engine_version`                | string       | Версія для стандартного RDS                               | 14.7                |
-| `engine_cluster`                | string       | Двигун для Aurora                                         | aurora-postgresql   |
-| `engine_version_cluster`        | string       | Версія для Aurora                                         | 15.3                |
-| `instance_class`                | string       | Клас інстансу (тип EC2)                                   | db.t3.medium        |
-| `allocated_storage`             | number       | Для стандартного RDS (GB)                                 | 20                  |
-| `aurora_replica_count`          | number       | Кількість reader реплік для Aurora                        | 1                   |
-| `publicly_accessible`           | bool         | Доступність бази з Інтернету                              | false               |
-| `multi_az`                      | bool         | Multi-AZ для стандартного RDS                             | false               |
-| `parameters`                    | map(string)  | Додаткові параметри бази (max_connections, work_mem тощо) | {}                  |
-| `backup_retention_period`       | string       | Кількість днів для збереження бекапів                     | ""                  |
-| `tags`                          | map(string)  | Теги для всіх ресурсів                                    | {}                  |
-| `vpc_id`                        | string       | ID VPC                                                    | –                   |
-| `vpc_cidr_block`                | string       | CIDR блок VPC                                             | –                   |
-| `subnet_private_ids`            | list(string) | Список приватних subnet                                   | –                   |
-| `subnet_public_ids`             | list(string) | Список публічних subnet                                   | –                   |
-| `parameter_group_family_aurora` | string       | Family для Aurora PG                                      | aurora-postgresql15 |
-| `parameter_group_family_rds`    | string       | Family для стандартного RDS PG                            | postgres15          |
-
-## Як змінити тип БД, engine та клас інстансу
-
-Тип БД:  
-use_aurora = true → створюється Aurora Cluster.  
-use_aurora = false → створюється стандартний RDS інстанс.
-
-Engine:  
-Для стандартного RDS: engine та engine_version.  
-Для Aurora: engine_cluster та engine_version_cluster.
-
-Клас інстансу:  
-Встановлюється через instance_class (db.t3.micro).
-
-Репліки Aurora:  
-Кількість reader реплік задається через aurora_replica_count.
-
-## Вихідні дані
-
-| Output         | Опис                             |
-| -------------- | -------------------------------- |
-| `rds_endpoint` | Endpoint для підключення до бази |
-
-output "rds_endpoint" {
-description = "RDS endpoint for connecting to the database"
-value = var.use_aurora ? aws_rds_cluster.aurora[0].endpoint : aws_db_instance.standard[0].endpoint
-}
 
 ## Результат
 
-<p>Піднята PostgreSQL (флаг "use_aurora" встановлено як "false")</p>
-<img src="lesson-10/img/rds.png">
+<p>Перевірка Prometheus</p>
+<img src="final project/img/prometheus.png">
+
+<p>Моніторінг через Grafana</p>
+
+```bash
+kubectl get all -n monitoring
+kubectl port-forward svc/grafana 3000:80 -n monitoring
+```
