@@ -176,7 +176,7 @@ module "rds" {
 }
 ```
 
-# Опис змінних
+## Опис змінних
 
 | Змінна                          | Тип          | Опис                                                      | Default             |
 | ------------------------------- | ------------ | --------------------------------------------------------- | ------------------- |
@@ -204,7 +204,7 @@ module "rds" {
 | `parameter_group_family_aurora` | string       | Family для Aurora PG                                      | aurora-postgresql15 |
 | `parameter_group_family_rds`    | string       | Family для стандартного RDS PG                            | postgres15          |
 
-# Як змінити тип БД, engine та клас інстансу
+## Як змінити тип БД, engine та клас інстансу
 
 Тип БД:  
 use_aurora = true → створюється Aurora Cluster.  
@@ -220,7 +220,7 @@ Engine:
 Репліки Aurora:  
 Кількість reader реплік задається через aurora_replica_count.
 
-# Вихідні дані
+## Вихідні дані
 
 | Output         | Опис                             |
 | -------------- | -------------------------------- |
