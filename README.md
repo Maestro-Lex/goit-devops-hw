@@ -89,3 +89,13 @@ helm upgrade --install django-app . --namespace django --create-namespace
 ```bash
 kubectl port-forward svc/django-app 8000:8000 -n django
 ```
+
+## Виконання Jenkins
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+```
+
+## Результат
+
+<img src="lesson-8-9/img/argo.png">

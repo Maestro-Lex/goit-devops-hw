@@ -45,13 +45,13 @@ module "vpc" {
   public_subnets     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"] # Публічні підмережі
   private_subnets    = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"] # Приватні підмережі
   availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c"]    # Зони доступності
-  vpc_name           = "lesson-7"                                    # Ім'я VPC
+  vpc_name           = "lesson-8-9"                                  # Ім'я VPC
 }
 
 # Підключаємо модуль ECR
 module "ecr" {
   source               = "./modules/ecr"
-  ecr_name             = "lesson-7"
+  ecr_name             = "lesson-8-9"
   image_scan_on_push   = true
   image_tag_mutability = "MUTABLE"
 }
@@ -59,7 +59,7 @@ module "ecr" {
 # Підключаємо модуль EKS
 module "eks" {
   source        = "./modules/eks"
-  cluster_name  = "lesson-7"                # Назва кластера
+  cluster_name  = "lesson-8-9"              # Назва кластера
   subnet_ids    = module.vpc.public_subnets # ID підмереж
   instance_type = "t3.micro"                # Тип інстансів
   desired_size  = 2                         # Бажана кількість нодів
@@ -74,4 +74,26 @@ data "aws_eks_cluster" "eks" {
 data "aws_eks_cluster_auth" "eks" {
   name       = module.eks.eks_cluster_name
   depends_on = [module.eks]
+}
+
+module "jenkins" {
+  source            = "./modules/jenkins"
+  cluster_name      = module.eks.eks_cluster_name
+  oidc_provider_arn = module.eks.oidc_provider_arn
+  oidc_provider_url = module.eks.oidc_provider_url
+  github_pat        = var.github_pat
+  github_user       = var.github_user
+  github_repo_url   = var.github_repo_url
+  depends_on        = [module.eks]
+  providers = {
+    helm       = helm
+    kubernetes = kubernetes
+  }
+}
+
+module "argo_cd" {
+  source        = "./modules/argo_cd"
+  namespace     = "argocd"
+  chart_version = "5.46.4"
+  depends_on    = [module.eks]
 }
