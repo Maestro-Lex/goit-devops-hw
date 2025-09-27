@@ -76,6 +76,7 @@ data "aws_eks_cluster_auth" "eks" {
   depends_on = [module.eks]
 }
 
+# Підключаємо модуль jenkins
 module "jenkins" {
   source            = "./modules/jenkins"
   cluster_name      = module.eks.eks_cluster_name
@@ -91,6 +92,7 @@ module "jenkins" {
   }
 }
 
+# Підключаємо модуль argo_cd
 module "argo_cd" {
   source        = "./modules/argo_cd"
   namespace     = "argocd"
@@ -98,6 +100,7 @@ module "argo_cd" {
   depends_on    = [module.eks]
 }
 
+# Підключаємо модуль rds
 module "rds" {
   source                  = "./modules/rds"
   name                    = var.name
@@ -134,4 +137,14 @@ module "rds" {
     Project     = var.project
   }
   depends_on = [module.vpc]
+}
+
+# Підключаємо моніторинг
+module "monitoring" {
+  source = "./modules/monitoring"
+
+  depends_on = [
+    module.eks,
+    aws_eks_addon.ebs_csi_driver
+  ]
 }
