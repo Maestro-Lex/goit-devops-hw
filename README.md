@@ -206,24 +206,18 @@ module "rds" {
 
 # Як змінити тип БД, engine та клас інстансу
 
-Тип БД:
-
-use_aurora = true → створюється Aurora Cluster.
-
+Тип БД:  
+use_aurora = true → створюється Aurora Cluster.  
 use_aurora = false → створюється стандартний RDS інстанс.
 
-Engine:
-
-Для стандартного RDS: engine та engine_version.
-
+Engine:  
+Для стандартного RDS: engine та engine_version.  
 Для Aurora: engine_cluster та engine_version_cluster.
 
-Клас інстансу:
+Клас інстансу:  
+Встановлюється через instance_class (db.t3.micro).
 
-Встановлюється через instance_class (db.t3.medium).
-
-Репліки Aurora:
-
+Репліки Aurora:  
 Кількість reader реплік задається через aurora_replica_count.
 
 # Вихідні дані
