@@ -8,7 +8,7 @@ resource "aws_ecr_repository" "goit_devops_ecr" {
   }
 
   tags = {
-    Name = var.ecr_name
+    Name = "${var.ecr_name}-ecr" # Додаємо тег, який включає ім'я VPC
   }
 }
 

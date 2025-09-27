@@ -22,10 +22,25 @@
     │   │   ├── variables.tf     # Змінні для VPC
     │   │   └── outputs.tf       # Виведення інформації про VPC
     │   │
-    │   └── ecr/                 # Модуль для ECR
-    │       ├── ecr.tf           # Створення ECR репозиторію
-    │       ├── variables.tf     # Змінні для ECR
-    │       └── outputs.tf       # Виведення URL репозиторію ECR
+    │   ├── ecr/                 # Модуль для ECR
+    │   │   ├── ecr.tf           # Створення ECR репозиторію
+    │   │   ├── variables.tf     # Змінні для ECR
+    │   │   └── outputs.tf       # Виведення URL репозиторію ECR
+    │   │
+    │   └── eks/                 # Модуль для Kubernetes кластера
+    │       ├── eks.tf           # Створення кластера
+    │       ├── variables.tf     # Змінні для EKS
+    │       └── outputs.tf       # Виведення інформації про кластер
+    │
+    ├── charts/
+    │   └── django-app/
+    │       ├── templates/
+    │       │   ├── deployment.yaml
+    │       │   ├── service.yaml
+    │       │   ├── configmap.yaml
+    │       │   └── hpa.yaml
+    │       ├── Chart.yaml
+    │       └── values.yaml
     │
     └── README.md                # Документація проєкту
 
@@ -34,6 +49,10 @@
 2. Модуль vpc/ використовується для налаштування віртуального мережевого простору. Створює Virtual Private Cloud (VPC) з трьома публічними підмережами для доступу в Інтернет через шлюз та трьома приватними підмережами з доступом до Інтернету через NAT Gateway. Керує маршрутизацією за відповідними таблицями.
 
 3. Модуль ecr/ створює ECR репозиторій з автоматичним скануванням образів.
+
+4. Модуль eks/ створює EKubernetes кластер.
+
+5. Charts/django-app/ власний Helm-чарт для Django-проєкту
 
 ## Порядок ініціалізації та запуску
 
@@ -51,13 +70,22 @@
 
 > <span><span style="color: red"><b>Увага!</b></span> Ресурс <b><i>s3-bucket</i></b> буде видалено лише якщо сховище порожнє.</span>
 
-## Результати виконання
+## Переносимо образ, створений в lesson-4, на ECR репозиторій
 
-<h3>Створена таблиця DynamoDB</h3>
-<img src = "lesson-5/img/dynamodb.png">
-<h3>Створений s3-bucket</h3>
-<img src = "lesson-5/img/s3.png">
-<h3>Створена VPC</h3>
-<img src = "lesson-5/img/vpc.png">
-<h3>Створений репозиторій ECR</h3>
-<img src = "lesson-5/img/ecr.png">
+```bash
+docker tag lesson-4-django:latest <ecr_repo>
+docker push <ecr_repo>
+```
+
+## Встановлюємо Django app за допомогою Helm Chart
+
+```bash
+cd charts/django-app
+helm upgrade --install django-app . --namespace django --create-namespace
+```
+
+## Перенапоравляємо порт
+
+```bash
+kubectl port-forward svc/django-app 8000:8000 -n django
+```

@@ -1,3 +1,36 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 4.0.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = ">= 2.0.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = ">= 2.0.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.eks.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.eks.token
+}
+provider "helm" {
+  kubernetes = {
+    host                   = data.aws_eks_cluster.eks.endpoint
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.eks.certificate_authority[0].data)
+    token                  = data.aws_eks_cluster_auth.eks.token
+  }
+}
+
 # Підключаємо модуль для S3 та DynamoDB
 module "s3_backend" {
   source      = "./modules/s3-backend"     # Шлях до модуля
@@ -12,13 +45,33 @@ module "vpc" {
   public_subnets     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"] # Публічні підмережі
   private_subnets    = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"] # Приватні підмережі
   availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c"]    # Зони доступності
-  vpc_name           = "lesson-5-vpc"                                # Ім'я VPC
+  vpc_name           = "lesson-7"                                    # Ім'я VPC
 }
 
 # Підключаємо модуль ECR
 module "ecr" {
   source               = "./modules/ecr"
-  ecr_name             = "lesson-5-ecr"
+  ecr_name             = "lesson-7"
   image_scan_on_push   = true
   image_tag_mutability = "MUTABLE"
+}
+
+# Підключаємо модуль EKS
+module "eks" {
+  source        = "./modules/eks"
+  cluster_name  = "lesson-7"                # Назва кластера
+  subnet_ids    = module.vpc.public_subnets # ID підмереж
+  instance_type = "t3.micro"                # Тип інстансів
+  desired_size  = 2                         # Бажана кількість нодів
+  max_size      = 3                         # Максимальна кількість нодів
+  min_size      = 1                         # Мінімальна кількість нодів
+}
+
+data "aws_eks_cluster" "eks" {
+  name       = module.eks.eks_cluster_name
+  depends_on = [module.eks]
+}
+data "aws_eks_cluster_auth" "eks" {
+  name       = module.eks.eks_cluster_name
+  depends_on = [module.eks]
 }

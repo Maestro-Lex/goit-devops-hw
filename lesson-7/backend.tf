@@ -5,7 +5,7 @@
 #terraform {
 #  backend "s3" {
 #    bucket         = "goit-devops-bucket-00001"
-#    key            = "lesson-5/terraform.tfstate"
+#    key            = "lesson-7/terraform.tfstate"
 #    region         = "us-east-1"
 #    dynamodb_table = "terraform-locks"
 #    encrypt        = true
